@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>真凶画像 · 呼吸作用侦探局</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none; /* 防止拖拽时选中文字 */
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+        body {
+            min-height: 100vh;
+            background: #c6e9fa;  /* 浅蓝色基调 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .detective-board {
+            width: 1100px;
+            max-width: 100%;
+            background-color: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(3px);
+            border-radius: 50px 50px 30px 30px;
+            box-shadow: 0 20px 30px rgba(0, 40, 80, 0.2);
+            padding: 30px 25px;
+            border: 2px solid white;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.4rem;
+            font-weight: 600;
+            letter-spacing: 4px;
+            color: #0b3b5c;
+            text-shadow: 3px 3px 0 #dff6ff;
+            margin-top: 0;
+            margin-bottom: 25px;
+            word-break: keep-all;
+        }
+        .hint-small {
+            text-align: center;
+            font-size: 1rem;
+            color: #1b5a7a;
+            background: #eff9ff;
+            display: inline-block;
+            padding: 6px 20px;
+            margin: 0 auto 20px;
+            border-radius: 40px;
+            border: 1px solid #9ac9e4;
+        }
+        .split-layout {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        /* 左侧匹配区域 (侦探板) */
+        .match-area {
+            flex: 1 1 500px;
+            background: #dff3fe;
+            border-radius: 40px;
+            padding: 30px 20px;
+            box-shadow: inset 0 0 0 2px white, 0 8px 0 #7bb3d0;
+            border: 2px solid #b0d4ec;
+        }
+        .equation-panel {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 10px 5px;
+            margin-bottom: 30px;
+        }
+        .zone-box {
+            background: white;
+            min-width: 100px;
+            height: 90px;
+            border-radius: 30px;
+            border: 3px dashed #2e7ea1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #0f4b6e;
+            box-shadow: 0 4px 0 #9cc9e3;
+            transition: all 0.1s;
+            padding: 8px;
+            flex: 0 1 auto;
+            background: #fefefe;
+        }
+        .zone-box[data-role="reactant"] {
+            border-color: #e68c2e;
+            background: #fff3e0;
+        }
+        .zone-box[data-role="product"] {
+            border-color: #4aa02c;
+            background: #e7f5db;
+        }
+        .zone-box .placed-item {
+            display: inline-block;
+            background: #ffeeca;
+            padding: 8px 16px;
+            border-radius: 50px;
+            border: 2px solid #cc9f5f;
+            font-weight: 600;
+            box-shadow: 0 3px 0 #b38b4a;
+            color: #3f2d12;
+        }
+        .zone-box:empty::before {
+            content: "⬇️ 放这里";
+            font-size: 0.8rem;
+            color: #6f9cbc;
+            opacity: 0.7;
+            font-weight: normal;
+        }
+        .operator {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: #1e5d81;
+            min-width: 40px;
+            text-align: center;
+            filter: drop-shadow(2px 2px 0 white);
+        }
+        .feedback-area {
+            text-align: center;
+            font-size: 2.5rem;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #edf7fe;
+            border-radius: 60px;
+            padding: 15px 10px;
+            border: 3px solid white;
+        }
+        .feedback-text {
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        .reset-btn {
+            background: #2c7ca0;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            padding: 12px 35px;
+            border-radius: 40px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            box-shadow: 0 7px 0 #124b66;
+            cursor: pointer;
+            transition: 0.1s ease;
+            margin-top: 15px;
+            border: 2px solid #b3e2ff;
+        }
+        .reset-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 2px 0 #124b66;
+        }
+        /* 右侧选择区域 (嫌疑人列表) */
+        .select-area {
+            flex: 0 0 240px;
+            background: #d3ecfa;
+            border-radius: 40px;
+            padding: 25px 15px;
+            box-shadow: inset 0 0 0 2px white, 0 8px 0 #6fa3c0;
+            border: 2px solid #a5ceed;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .select-title {
+            text-align: center;
+            background: #1b5777;
+            color: white;
+            padding: 12px 0;
+            border-radius: 50px;
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            border: 2px solid #e2f0ff;
+        }
+        .card {
+            background: white;
+            border-radius: 50px;
+            padding: 18px 8px;
+            text-align: center;
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: #133f55;
+            box-shadow: 0 7px 0 #88b8d4, 0 10px 15px rgba(0,20,30,0.2);
+            cursor: grab;
+            border: 3px solid #f5ffff;
+            transition: 0.1s;
+            transform: translateY(0);
+            word-break: keep-all;
+        }
+        .card[draggable="true"]:active {
+            cursor: grabbing;
+            opacity: 0.8;
+        }
+        .card.disabled {
+            opacity: 0.5;
+            background: #b3cbd9;
+            box-shadow: 0 3px 0 #577b92;
+            transform: translateY(4px);
+            cursor: not-allowed;
+            border: 3px dashed #506e80;
+            text-decoration: line-through 2px #962020;
+            pointer-events: none;   /* 使其不可拖拽，且不响应点击 */
+        }
+        /* 一些小装饰 */
+        .badge {
+            background: #ece81a;
+            color: #1d3e53;
+            padding: 5px 15px;
+            border-radius: 40px;
+            font-weight: 600;
+        }
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #2f617c;
+        }
+        /* 响应式 */
+        @media (max-width: 700px) {
+            .equation-panel {
+                gap: 8px;
+            }
+            .zone-box {
+                min-width: 70px;
+                height: 70px;
+                font-size: 1rem;
+            }
+            .operator {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="detective-board">
+    <h1>🔍 真凶画像 · 呼吸作用 🔍</h1>
+    <div style="text-align: center;"><span class="hint-small">🧪 拖拽右侧嫌疑模块到左侧，组合正确真凶现形！</span></div>
+
+    <div class="split-layout">
+        <!-- 左侧匹配区域 (犯罪现场还原) -->
+        <div class="match-area">
+            <div class="equation-panel">
+                <!-- 反应物两个盒子 data-role=reactant -->
+                <div class="zone-box" data-role="reactant" id="reactant1"></div>
+                <div class="operator">➕</div>
+                <div class="zone-box" data-role="reactant" id="reactant2"></div>
+                <div class="operator">➡️</div>
+                <!-- 生成物三个盒子 data-role=product -->
+                <div class="zone-box" data-role="product" id="product1"></div>
+                <div class="operator">➕</div>
+                <div class="zone-box" data-role="product" id="product2"></div>
+                <div class="operator">➕</div>
+                <div class="zone-box" data-role="product" id="product3"></div>
+            </div>
+
+            <!-- 反馈区域: 恭喜/哭脸 -->
+            <div class="feedback-area" id="feedback">
+                <span class="feedback-text" id="feedbackMessage">👆 把卡片拖进框里</span>
+            </div>
+
+            <button class="reset-btn" id="resetBtn">🔄 重新调查</button>
+        </div>
+
+        <!-- 右侧选择区域 (五名嫌疑模块) -->
+        <div class="select-area">
+            <div class="select-title">🧾 嫌疑清单</div>
+            <!-- 注意: data-name 用于识别身份，draggable 初始true -->
+            <div class="card" draggable="true" data-name="有机物">🌾 有机物</div>
+            <div class="card" draggable="true" data-name="氧气">💨 氧气</div>
+            <div class="card" draggable="true" data-name="水">💧 水</div>
+            <div class="card" draggable="true" data-name="二氧化碳">🌫️ 二氧化碳</div>
+            <div class="card" draggable="true" data-name="热量">🔥 热量</div>
+        </div>
+    </div>
+    <footer>⚖️ 正确公式：有机物 + 氧气 → 二氧化碳 + 水 + 热量</footer>
+</div>
+
+<script>
+    (function() {
+        // 获取所有关键元素
+        const dropZones = document.querySelectorAll('.zone-box');
+        const cards = document.querySelectorAll('.card');
+        const feedbackDiv = document.getElementById('feedbackMessage');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // 右侧卡片根据name快速查找 (仅未被禁用的卡片才能被拖拽放置)
+        function getActiveCardByName(name) {
+            // 寻找 data-name 匹配 且 没有 disabled 类的卡片 (draggable 也应是true)
+            return document.querySelector(`.card[data-name="${name}"]:not(.disabled)`);
+        }
+
+        // ---------- 拖拽事件处理 ----------
+        // 为所有可拖拽卡片设置 dragstart
+        cards.forEach(card => {
+            card.addEventListener('dragstart', function(e) {
+                // 如果卡片被禁用（有disabled类）就不允许拖拽
+                if (this.classList.contains('disabled')) {
+                    e.preventDefault();
+                    return false;
+                }
+                // 储存拖拽的数据: 卡片的data-name
+                e.dataTransfer.setData('text/plain', this.getAttribute('data-name'));
+                e.dataTransfer.effectAllowed = 'move';
+                // 让鼠标样式好看
+            });
+
+            card.addEventListener('dragend', function(e) {
+                // 没啥必要处理，但防止默认图像残留
+            });
+        });
+
+        // 为所有放置区（左侧框）添加 dragover / drop 监听
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', function(e) {
+                e.preventDefault();  // 必须阻止才能成为有效drop目标
+                e.dataTransfer.dropEffect = 'move';
+                // 简单视觉反馈
+                this.style.background = '#fefcbf';
+            });
+
+            zone.addEventListener('dragleave', function(e) {
+                this.style.background = ''; // 恢复原色 (由css控制)
+            });
+
+            zone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.background = ''; // 还原背景
+
+                // 1. 获取拖拽的模块名称
+                const draggedName = e.dataTransfer.getData('text/plain');
+                if (!draggedName) return;
+
+                // 2. 检查目标框是否已经包含内容 (有子节点代表已放置)
+                if (this.children.length > 0) {
+                    // 已经有卡片，不再放置
+                    return;
+                }
+
+                // 3. 通过名称找到对应的未被禁用的右侧卡片
+                const sourceCard = getActiveCardByName(draggedName);
+                if (!sourceCard) {
+                    // 可能已经用过(disabled) 或者名字错误
+                    return;
+                }
+
+                // 4. 检查这个模块是不是已经被使用了？通过disabled判断，但之前已经过滤。再检查一下安全
+                if (sourceCard.classList.contains('disabled')) {
+                    return;
+                }
+
+                // 5. 在框里创建一个放置的元素 (克隆卡片的样子)
+                const placedSpan = document.createElement('span');
+                placedSpan.className = 'placed-item';
+                // 从data-name获取显示文本（或者可以用源卡片文本，但避免emoji干扰只取文字）
+                let displayText = sourceCard.getAttribute('data-name');
+                // 也可包含原卡片文字，但保留清晰
+                placedSpan.textContent = displayText;  // 例如“有机物”
+                this.appendChild(placedSpan);
+
+                // 6. 禁用右侧卡片 (加disabled类，并设置draggable=false)
+                sourceCard.classList.add('disabled');
+                sourceCard.setAttribute('draggable', 'false');
+
+                // 7. 检查所有框是否已填满 -> 判断方程式是否正确
+                checkEquation();
+
+                // 可选: 如果不想再拖拽别的? 继续等待，但未填满时不判断。
+            });
+        });
+
+        // 判定函数: 读取所有zone的内容，验证反应物和生成物集合
+        function checkEquation() {
+            // 收集所有反应物框 (data-role=reactant) 的内容
+            const reactantZones = document.querySelectorAll('.zone-box[data-role="reactant"]');
+            const productZones = document.querySelectorAll('.zone-box[data-role="product"]');
+
+            // 获取每个框里的文本 (如果没放卡片，children长度为0)
+            let reactantValues = [];
+            reactantZones.forEach(zone => {
+                if (zone.children.length > 0) {
+                    // 取出 placed-item 的文本
+                    reactantValues.push(zone.children[0].textContent.trim());
+                } else {
+                    reactantValues.push(null);  // 空占位
+                }
+            });
+
+            let productValues = [];
+            productZones.forEach(zone => {
+                if (zone.children.length > 0) {
+                    productValues.push(zone.children[0].textContent.trim());
+                } else {
+                    productValues.push(null);
+                }
+            });
+
+            // 检查是否所有5个框都填满了 (没有null)
+            const allFilled = [...reactantValues, ...productValues].every(v => v !== null);
+            if (!allFilled) {
+                // 未填满时，不显示最终结果，可清除反馈（但保留一些提示）
+                feedbackDiv.innerText = '👆 继续拖拽...';
+                return;
+            }
+
+            // 填满了，开始验证
+            // 期望反应物集合: 有机物、氧气 (顺序无关)
+            const expectedReactants = ['有机物', '氧气'];
+            // 期望生成物集合: 二氧化碳、水、热量
+            const expectedProducts = ['二氧化碳', '水', '热量'];
+
+            // 检查反应物是否匹配 (长度2，且包含两者)
+            const reactantOk = reactantValues.length === 2 &&
+                                expectedReactants.every(e => reactantValues.includes(e)) &&
+                                reactantValues.every(v => expectedReactants.includes(v));  // 确保没有多余
+
+            const productOk = productValues.length === 3 &&
+                                expectedProducts.every(e => productValues.includes(e)) &&
+                                productValues.every(v => expectedProducts.includes(v));
+
+            if (reactantOk && productOk) {
+                // 正确！
+                feedbackDiv.innerHTML = '🎉 恭喜！ 真凶落网！ 🎉';
+            } else {
+                // 错误
+                feedbackDiv.innerHTML = '😭 请再接再厉 😭';
+            }
+        }
+
+        // ---------- 重置功能 ----------
+        resetBtn.addEventListener('click', function() {
+            // 1. 清空所有放置区 (zone-box) 的内部内容
+            dropZones.forEach(zone => {
+                zone.innerHTML = '';  // 移除所有放置的span
+            });
+
+            // 2. 恢复所有右侧卡片: 移除disabled类，设置draggable=true
+            cards.forEach(card => {
+                card.classList.remove('disabled');
+                card.setAttribute('draggable', 'true');
+            });
+
+            // 3. 反馈区域重置
+            feedbackDiv.innerHTML = '👆 把卡片拖进框里';
+        });
+
+        // 额外保险: 禁止从浏览器其他地方拖入图片等
+        document.addEventListener('dragover', function(e) {
+            e.preventDefault();
+        });
+        document.addEventListener('drop', function(e) {
+            e.preventDefault();
+        });
+
+        // 预处理: 确保所有卡片初始状态draggable=true (已满足)
+        // 并禁用浏览器默认图片拖拽效果
+        window.addEventListener('load', function() {
+            // 给zone初始背景清除
+        });
+    })();
+</script>
+
+</body>
+</html>
